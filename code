@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculator & Unit Converter</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .card {
+      background: #fff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      padding: 24px;
+    }
+    h1 { font-size: 1.3rem; text-align: center; margin: 0 0 16px; color: #1f3a5f; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+    .tabs button {
+      flex: 1; padding: 10px 4px; border: none; border-radius: 6px;
+      background: #dde5f0; color: #1f3a5f; cursor: pointer; font-size: 0.9rem;
+    }
+    .tabs button.active { background: #1f3a5f; color: #fff; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    label { display: block; margin: 10px 0 4px; font-size: 0.85rem; color: #444; }
+    input, select {
+      width: 100%; padding: 10px; font-size: 1rem;
+      border: 1px solid #b9c4d4; border-radius: 6px;
+    }
+    .go {
+      width: 100%; margin-top: 16px; padding: 11px; border: none; border-radius: 6px;
+      background: #2e7d32; color: #fff; font-size: 1rem; cursor: pointer;
+    }
+    .result {
+      margin-top: 16px; padding: 12px; border-radius: 6px;
+      background: #f1f6ee; font-weight: bold; text-align: center; min-height: 20px;
+    }
+    .result.error { background: #fdecea; color: #b71c1c; }
+    .note { font-size: 0.75rem; color: #777; margin-top: 10px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Calculator & Unit Converter</h1>
+
+    <div class="tabs">
+      <button class="active" data-tab="calc">Calculator</button>
+      <button data-tab="units">Units</button>
+      <button data-tab="currency">Currency</button>
+    </div>
+
+    <!-- Calculator -->
+    <div class="panel active" id="calc">
+      <label for="num1">First number</label>
+      <input type="text" id="num1" placeholder="e.g. 10">
+      <label for="op">Operator</label>
+      <select id="op">
+        <option value="+">+ (add)</option>
+        <option value="-">- (subtract)</option>
+        <option value="*">* (multiply)</option>
+        <option value="/">/ (divide)</option>
+      </select>
+      <label for="num2">Second number</label>
+      <input type="text" id="num2" placeholder="e.g. 4">
+      <button class="go" id="calcBtn">Calculate</button>
+      <div class="result" id="calcResult"></div>
+    </div>
+
+    <!-- Unit converter -->
+    <div class="panel" id="units">
+      <label for="unitType">Conversion</label>
+      <select id="unitType">
+        <option value="kmToMiles">Kilometres to Miles</option>
+        <option value="milesToKm">Miles to Kilometres</option>
+        <option value="cToF">Celsius to Fahrenheit</option>
+        <option value="fToC">Fahrenheit to Celsius</option>
+      </select>
+      <label for="unitValue">Value</label>
+      <input type="text" id="unitValue" placeholder="e.g. 100">
+      <button class="go" id="unitBtn">Convert</button>
+      <div class="result" id="unitResult"></div>
+    </div>
+
+    <!-- Currency converter -->
+    <div class="panel" id="currency">
+      <label for="amount">Amount</label>
+      <input type="text" id="amount" placeholder="e.g. 10">
+      <label for="fromCur">From</label>
+      <select id="fromCur"></select>
+      <label for="toCur">To</label>
+      <select id="toCur"></select>
+      <button class="go" id="curBtn">Convert</button>
+      <div class="result" id="curResult"></div>
+      <div class="note">Rates are fixed sample values, not live.</div>
+    </div>
+  </div>
+
+  <script>
+    // Fixed sample rates: units of each currency per 1 USD. Edit as needed.
+    const RATES_PER_USD = { USD: 1, INR: 83, EUR: 0.92, GBP: 0.79, JPY: 150 };
+
+    // ---------- Helpers ----------
+    function parseNumber(text) {
+      const value = text.trim();
+      if (value === "" || isNaN(value)) return null;   // validation
+      return Number(value);
+    }
+
+    function show(id, message, isError) {
+      const box = document.getElementById(id);
+      box.textContent = message;
+      box.className = isError ? "result error" : "result";
+    }
+
+    // ---------- Tabs ----------
+    document.querySelectorAll(".tabs button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ---------- Calculator ----------
+    function calculate() {
+      const a = parseNumber(document.getElementById("num1").value);
+      const b = parseNumber(document.getElementById("num2").value);
+      const op = document.getElementById("op").value;
+
+      if (a === null || b === null) {
+        show("calcResult", "Please enter valid numbers.", true);
+        return;
+      }
+      let result;
+      if (op === "+") result = a + b;
+      else if (op === "-") result = a - b;
+      else if (op === "*") result = a * b;
+      else {
+        if (b === 0) {
+          show("calcResult", "Error: cannot divide by zero.", true);
+          return;
+        }
+        result = a / b;
+      }
+      show("calcResult", a + " " + op + " " + b + " = " + Number(result.toFixed(4)), false);
+    }
+
+    // ---------- Unit converter ----------
+    function convertUnits() {
+      const value = parseNumber(document.getElementById("unitValue").value);
+      const type = document.getElementById("unitType").value;
+
+      if (value === null) {
+        show("unitResult", "Please enter a valid number.", true);
+        return;
+      }
+      let text;
+      if (type === "kmToMiles") text = value + " km = " + (value * 0.621371).toFixed(2) + " miles";
+      else if (type === "milesToKm") text = value + " miles = " + (value / 0.621371).toFixed(2) + " km";
+      else if (type === "cToF") text = value + " \u00B0C = " + (value * 9 / 5 + 32).toFixed(2) + " \u00B0F";
+      else text = value + " \u00B0F = " + ((value - 32) * 5 / 9).toFixed(2) + " \u00B0C";
+      show("unitResult", text, false);
+    }
+
+    // ---------- Currency converter ----------
+    function convertCurrency() {
+      const amount = parseNumber(document.getElementById("amount").value);
+      const from = document.getElementById("fromCur").value;
+      const to = document.getElementById("toCur").value;
+
+      if (amount === null) {
+        show("curResult", "Please enter a valid amount.", true);
+        return;
+      }
+      const result = (amount / RATES_PER_USD[from]) * RATES_PER_USD[to];
+      show("curResult", amount.toFixed(2) + " " + from + " = " + result.toFixed(2) + " " + to, false);
+    }
+
+    // Fill the currency dropdowns from the rates object
+    ["fromCur", "toCur"].forEach(function (id, index) {
+      const select = document.getElementById(id);
+      Object.keys(RATES_PER_USD).forEach(function (code) {
+        select.add(new Option(code, code));
+      });
+      select.selectedIndex = index;   // USD -> INR by default
+    });
+
+    document.getElementById("calcBtn").addEventListener("click", calculate);
+    document.getElementById("unitBtn").addEventListener("click", convertUnits);
+    document.getElementById("curBtn").addEventListener("click", convertCurrency);
+  </script>
+</body>
+</html>
